@@ -24,6 +24,47 @@ async fn check_ffmpeg_version(app: tauri::AppHandle) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<String, String> {
+    // Create a temporary directory that won't be immediately deleted
+    let temp_dir = tempfile::Builder::new()
+        .prefix("ud_captioning_")
+        .tempdir()
+        .map_err(|e| format!("Failed to create temp dir: {}", e))?;
+    
+    // Convert to path and keep it from being deleted
+    let temp_dir_path = temp_dir.into_path();
+    let wav_path = temp_dir_path.join("audio.wav");
+    let wav_path_str = wav_path.to_string_lossy().to_string();
+    
+    // Note: ensure the sidecar name matches your tauri.conf.json bundle configuration
+    let sidecar_command = app.shell()
+        .sidecar("binaries/ffmpeg")
+        .map_err(|e| format!("Failed to get ffmpeg sidecar: {}", e))?;
+    
+    // Arguments: -i <video_path> -vn -ac 1 -ar 16000 -acodec pcm_s16le <wav_path>
+    let output = sidecar_command
+        .args([
+            "-i", &video_path,
+            "-vn",
+            "-ac", "1",
+            "-ar", "16000",
+            "-acodec", "pcm_s16le",
+            "-y",
+            &wav_path_str
+        ])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute ffmpeg: {}", e))?;
+        
+    if output.status.success() {
+        Ok(wav_path_str)
+    } else {
+        let err_msg = String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown ffmpeg error".to_string());
+        Err(format!("ffmpeg error: {}", err_msg))
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -32,7 +73,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version])
+        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
