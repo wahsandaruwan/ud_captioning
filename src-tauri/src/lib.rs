@@ -1,5 +1,8 @@
 pub mod models;
+pub mod google_speech;
+
 use tauri_plugin_shell::ShellExt;
+use tauri_plugin_store::StoreExt;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -33,6 +36,7 @@ async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<Stri
         .map_err(|e| format!("Failed to create temp dir: {}", e))?;
     
     // Convert to path and keep it from being deleted
+    #[allow(deprecated)]
     let temp_dir_path = temp_dir.into_path();
     let wav_path = temp_dir_path.join("audio.wav");
     let wav_path_str = wav_path.to_string_lossy().to_string();
@@ -65,6 +69,22 @@ async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<Stri
     }
 }
 
+#[tauri::command]
+async fn transcribe_audio(
+    app: tauri::AppHandle,
+    wav_path: String,
+    language_code: String,
+) -> Result<Vec<crate::models::CaptionSegment>, String> {
+    // Read the service account path from the store
+    let store = app.store("store.json").map_err(|e| format!("Store error: {}", e))?;
+    
+    let service_account_path = store.get("google_key_path")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .ok_or("Google service account key path not found in store. Please configure it first.")?;
+        
+    crate::google_speech::transcribe_audio_impl(app, wav_path, language_code, service_account_path).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -73,7 +93,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio])
+        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio, transcribe_audio])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

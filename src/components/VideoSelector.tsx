@@ -1,10 +1,10 @@
 import React from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { useVideoStore } from '../store/useVideoStore';
+import { useAppStore } from '../store/useVideoStore';
 
 export const VideoSelector: React.FC = () => {
-  const { videoPath, setVideoPath } = useVideoStore();
+  const { videoPath, setVideoPath } = useAppStore();
 
   const handleSelectVideo = async () => {
     try {
