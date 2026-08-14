@@ -1,5 +1,6 @@
 pub mod models;
 pub mod google_speech;
+pub mod gemini;
 
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
@@ -85,6 +86,15 @@ async fn transcribe_audio(
     crate::google_speech::transcribe_audio_impl(app, wav_path, language_code, service_account_path).await
 }
 
+#[tauri::command]
+async fn extract_important_words(
+    app: tauri::AppHandle,
+    segments: Vec<crate::models::CaptionSegment>,
+    language_code: String,
+) -> Result<Vec<crate::models::CaptionSegment>, String> {
+    crate::gemini::extract_important_words_impl(app, segments, language_code).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -93,7 +103,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio, transcribe_audio])
+        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio, transcribe_audio, extract_important_words])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
