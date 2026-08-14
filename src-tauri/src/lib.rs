@@ -1,4 +1,4 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+pub mod models;
 use tauri_plugin_shell::ShellExt;
 
 #[tauri::command]
