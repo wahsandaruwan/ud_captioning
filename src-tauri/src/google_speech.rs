@@ -225,3 +225,44 @@ fn parse_time(time_val: Option<&serde_json::Value>) -> f64 {
         _ => 0.0,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_parse_time() {
+        assert_eq!(parse_time(Some(&json!("1.234s"))), 1.234);
+        assert_eq!(parse_time(Some(&json!("0s"))), 0.0);
+        assert_eq!(parse_time(None), 0.0);
+    }
+
+    #[test]
+    fn test_parse_google_speech_response() {
+        let mock_response = json!({
+            "results": [
+                {
+                    "alternatives": [
+                        {
+                            "transcript": "Hello world",
+                            "words": [
+                                { "word": "Hello", "startTime": "0s", "endTime": "0.5s" },
+                                { "word": "world", "startTime": "0.5s", "endTime": "1.0s" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        let segments = parse_google_speech_response(mock_response).unwrap();
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].text, "Hello world");
+        assert_eq!(segments[0].start, 0.0);
+        assert_eq!(segments[0].end, 1.0);
+        assert_eq!(segments[0].words.len(), 2);
+        assert_eq!(segments[0].words[0].word, "Hello");
+        assert_eq!(segments[0].words[1].end, 1.0);
+    }
+}

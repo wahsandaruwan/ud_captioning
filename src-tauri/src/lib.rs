@@ -30,6 +30,18 @@ async fn check_ffmpeg_version(app: tauri::AppHandle) -> Result<String, String> {
     }
 }
 
+pub fn build_ffmpeg_audio_args(video_path: &str, wav_path_str: &str) -> Vec<String> {
+    vec![
+        "-i".to_string(), video_path.to_string(),
+        "-vn".to_string(),
+        "-ac".to_string(), "1".to_string(),
+        "-ar".to_string(), "16000".to_string(),
+        "-acodec".to_string(), "pcm_s16le".to_string(),
+        "-y".to_string(),
+        wav_path_str.to_string()
+    ]
+}
+
 #[tauri::command]
 async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<String, String> {
     // Create a temporary directory that won't be immediately deleted
@@ -49,17 +61,10 @@ async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<Stri
         .sidecar("binaries/ffmpeg")
         .map_err(|e| format!("Failed to get ffmpeg sidecar: {}", e))?;
     
-    // Arguments: -i <video_path> -vn -ac 1 -ar 16000 -acodec pcm_s16le <wav_path>
+    let args = build_ffmpeg_audio_args(&video_path, &wav_path_str);
+    
     let output = sidecar_command
-        .args([
-            "-i", &video_path,
-            "-vn",
-            "-ac", "1",
-            "-ar", "16000",
-            "-acodec", "pcm_s16le",
-            "-y",
-            &wav_path_str
-        ])
+        .args(args)
         .output()
         .await
         .map_err(|e| format!("Failed to execute ffmpeg: {}", e))?;
@@ -71,6 +76,29 @@ async fn extract_audio(app: tauri::AppHandle, video_path: String) -> Result<Stri
         Err(format!("ffmpeg error: {}", err_msg))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_ffmpeg_audio_args() {
+        let args = build_ffmpeg_audio_args("input.mp4", "output.wav");
+        assert_eq!(
+            args,
+            vec![
+                "-i", "input.mp4",
+                "-vn",
+                "-ac", "1",
+                "-ar", "16000",
+                "-acodec", "pcm_s16le",
+                "-y",
+                "output.wav"
+            ]
+        );
+    }
+}
+
 
 #[tauri::command]
 async fn transcribe_audio(
