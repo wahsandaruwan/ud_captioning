@@ -56,8 +56,9 @@ describe('Timeline', () => {
   it('updates currentTime on timeline mousedown', () => {
     render(<Timeline />);
     
-    // We have to mock getBoundingClientRect since jsdom doesn't implement layout
-    const timelineElement = screen.getByText('00:10.00').parentElement?.lastElementChild as HTMLElement;
+    // Get the timeline container which is the sibling of the time text container
+    const timeContainer = screen.getByText('00:10.00').parentElement;
+    const timelineElement = timeContainer?.nextElementSibling as HTMLElement;
     
     timelineElement.getBoundingClientRect = () => ({
       left: 0,
