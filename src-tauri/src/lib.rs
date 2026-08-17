@@ -1,6 +1,7 @@
 pub mod models;
 pub mod google_speech;
 pub mod gemini;
+pub mod ass;
 
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
