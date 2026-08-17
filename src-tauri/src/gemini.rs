@@ -57,7 +57,7 @@ pub struct ImportantWord {
 
 pub async fn extract_important_words_impl(
     app: AppHandle,
-    mut segments: Vec<CaptionSegment>,
+    segments: Vec<CaptionSegment>,
     language_code: String,
 ) -> Result<Vec<CaptionSegment>, String> {
     // Try to get API key from environment, fallback to Tauri store
