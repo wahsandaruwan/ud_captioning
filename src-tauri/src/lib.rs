@@ -2,6 +2,7 @@ pub mod models;
 pub mod google_speech;
 pub mod gemini;
 pub mod ass;
+pub mod export;
 
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_store::StoreExt;
@@ -104,7 +105,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio, transcribe_audio, extract_important_words])
+        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg_version, extract_audio, transcribe_audio, extract_important_words, crate::export::export_video])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
